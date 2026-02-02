@@ -3,17 +3,6 @@ import { validationResult } from 'express-validator';
 import * as controller from '../controllers/products.controller.js';
 import { productCreateRules, productUpdateRules } from '../validation/products.rules.js';
 
-const router = Router();
-
-// Middleware de validación
-const validate = (rules) => [
-  ...rules,
-  (req, res, next) => {
-    const result = validationResult(req);
-    if (!result.isEmpty()) return res.status(422).json({ errors: result.array() });
-    next();
-  }
-];
 
 /**
  * @openapi
@@ -25,6 +14,7 @@ const validate = (rules) => [
  *   get:
  *     summary: Llistar productes
  *     tags: [Products]
+ *     security: [{ "bearerAuth": [] }]
  *     parameters:
  *       - in: query
  *         name: page
@@ -57,32 +47,11 @@ const validate = (rules) => [
  *                 limit: { type: integer }
  *                 total: { type: integer }
  *                 pages: { type: integer }
- */
-router.get('/', controller.list);
-
-/**
- * @openapi
- * /api/v1/products/{id}:
- *   get:
- *     summary: Obtindre producte per ID
- *     tags: [Products]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: string }
- *     responses:
- *       200: { description: OK }
- *       404: { description: No trobat }
- */
-router.get('/:id', controller.getById);
-
-/**
- * @openapi
- * /api/v1/products:
+ *
  *   post:
  *     summary: Crear producte
  *     tags: [Products]
+ *     security: [{ "bearerAuth": [] }]
  *     requestBody:
  *       required: true
  *       content:
@@ -99,15 +68,25 @@ router.get('/:id', controller.getById);
  *         content:
  *           application/json:
  *             schema: { $ref: '#/components/schemas/Error' }
- */
-router.post('/', validate(productCreateRules), controller.create);
-
-/**
- * @openapi
+ *
  * /api/v1/products/{id}:
+ *   get:
+ *     summary: Obtindre producte per ID
+ *     tags: [Products]
+ *     security: [{ "bearerAuth": [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: OK }
+ *       404: { description: No trobat }
+ *
  *   put:
  *     summary: Actualitzar producte
  *     tags: [Products]
+ *     security: [{ "bearerAuth": [] }]
  *     parameters:
  *       - in: path
  *         name: id
@@ -127,15 +106,11 @@ router.post('/', validate(productCreateRules), controller.create);
  *         content:
  *           application/json:
  *             schema: { $ref: '#/components/schemas/Error' }
- */
-router.put('/:id', validate(productUpdateRules), controller.update);
-
-/**
- * @openapi
- * /api/v1/products/{id}:
+ *
  *   delete:
  *     summary: Esborrar producte
  *     tags: [Products]
+ *     security: [{ "bearerAuth": [] }]
  *     parameters:
  *       - in: path
  *         name: id
@@ -145,6 +120,27 @@ router.put('/:id', validate(productUpdateRules), controller.update);
  *       204: { description: Esborrat }
  *       404: { description: No trobat }
  */
+const router = Router();
+
+const validate = (rules) => [
+  ...rules,
+  (req, res, next) => {
+    const result = validationResult(req);
+    if (!result.isEmpty()) return res.status(422).json({ errors: result.array() });
+    next();
+  }
+];
+
+// Rutas generales
+router.get('/', controller.list);
+router.post('/', validate(productCreateRules), controller.create);
+
+// RUTA ESPECÍFICA (debe ir antes de /:id)
+router.get('/export.csv', controller.exportToCsv);
+
+// Rutas con parámetro dinámico
+router.get('/:id', controller.getById);
+router.put('/:id', validate(productUpdateRules), controller.update);
 router.delete('/:id', controller.remove);
 
 export default router;
